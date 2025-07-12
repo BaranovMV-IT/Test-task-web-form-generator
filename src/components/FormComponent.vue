@@ -1,32 +1,77 @@
 <template>
-  <form class="form">
-    <div class="form__title">Ответьте на вопросы</div>
+  <form 
+    :name="formData?.name" 
+    class="form"
+  >
+    <div class="form__title">{{ formData?.title }}</div>
     <slot name="note" />
-    <div class="form__field">
-      <div class="form__field__title">ФИО</div>
+    <div 
+      v-for="item in formData?.fields"
+      :key="item.name"
+      class="form__field"
+    >
+      <slot :name="item.name" />
+      <div class="form__field__title">{{ item.title }}</div>
       <div class="form__field__item">
-        <input class="form__field__item__input  field__item">
-        <select class="form__field__item__select  field__item">
-          <option>Мужчина</option>
+        <input 
+          v-model="formValuesData[item.name]"
+          :name="item.name"
+          :id="item.name"
+          v-if="item.type == 'input'"
+          class="form__field__item__input  field__item"
+        >
+        <select 
+          v-model="formValuesData[item.name]"
+          :name="item.name"
+          :id="item.name"
+          v-if="item.type == 'select'"
+          class="form__field__item__select  field__item"
+        >
+          <option 
+            v-for="optn in item.options"
+            :value="optn.value"
+          >
+            {{ optn.title }}
+          </option>
         </select>
-        <div class="form__field__item__checkbox">
-          <label class="form__field__item__checkbox__label">
-            <input type="checkbox">
-            Машина
+        <div 
+          v-if="item.type == 'checkbox'"
+          class="form__field__item__checkbox"
+        >
+          <label
+            v-for="lbl in item.labels"
+            class="form__field__item__checkbox__label"
+          >
+            <input 
+              type="checkbox" 
+              v-model="formValuesData[item.name]"
+              :name="item.name + '-' + lbl.name"
+              :value="lbl.name"
+              :id="item.name"
+            >
+            {{ lbl.title }}
           </label>
         </div>
-        <textarea class="form__field__item__textarea  field__item"></textarea>
+        <textarea 
+          v-model="formValuesData[item.name]"
+          :name="item.name"
+          :id="item.name"
+          v-if="item.type == 'textarea'"
+          class="form__field__item__textarea  field__item"
+        ></textarea>
       </div>
     </div>
     <div class="form__controls">
       <button 
         type="reset"
+        @click.prevent="formReset()"
         class="form__controls__button"
       >
         Сброс
       </button>
       <button 
         type="submit"
+        @click.prevent="formSubmit()"
         class="form__controls__button"
       >
         Отправить
@@ -36,7 +81,87 @@
 </template>
 
 <script setup lang="ts">
+import { defineProps, PropType, ref, onBeforeMount, onMounted } from 'vue';
+import { formDataType, ValueType } from "@/store/index";
 
+const props = defineProps({
+  formData: {
+    type: Object as PropType<formDataType | undefined>,
+    required: true
+  },
+  selectedValues: Object as PropType<ValueType | object>
+});
+
+let formValuesData = ref<ValueType | object | any>({});
+
+const setFormValuesData = () => {
+  if(props.formData){
+    let obj: ValueType = {};
+    for(let field of props.formData.fields){
+      if(field.type != "checkbox"){
+        obj[field.name] = "";
+      } else {
+        obj[field.name] = [];
+      }
+    }
+    if(props.selectedValues){
+      obj = {...obj, ...props.selectedValues};
+    }
+    return obj
+  }
+}
+
+const setFieldsProperties = () => {
+  if(props.formData){
+    for(let field of props.formData.fields){
+      if(field.props){
+        const elem: any = document.getElementById(field.name);
+        if(elem){
+          for(let prop in field.props){
+            elem[prop] = field.props[prop];
+          }
+        }
+      }
+    }
+  }
+}
+
+const formReset = () => {
+  if(formValuesData.value){
+    for(let key in formValuesData.value){
+      if(formValuesData.value[key].constructor.name != "Array"){
+        formValuesData.value[key] = "";
+      } else {
+        formValuesData.value[key] = [];
+      }
+    }
+  }
+}
+
+const formSubmit = () => {
+  let pr = false;
+  for(let key in formValuesData.value){
+    if(formValuesData.value[key] == "" || formValuesData.value[key].length == 0){
+      pr = true;
+      break;
+    }
+  }
+  if(!pr){
+    const req = JSON.stringify(formValuesData.value);
+    alert(req);
+  } else {
+    alert("Заполнены не все поля!");
+  }
+}
+
+onBeforeMount(() => {
+  if(props.selectedValues){
+    formValuesData.value = setFormValuesData();
+  }
+});
+onMounted(() => {
+  setFieldsProperties();
+});
 </script>
 
 <style lang="scss">

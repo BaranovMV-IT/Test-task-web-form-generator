@@ -1,7 +1,15 @@
 <template>
   <header>
     <div class="header__list">
-      <button class="header__list__button">form1</button>
+      <button 
+        v-for="item in availableForms"
+        :key="item.name"
+        @click="redirectToFormPage(item.name)"
+        :style="{display: (route.params.id != item.name) ? 'block' : 'none'}"
+        class="header__list__button"
+      >
+        {{ item.name }}
+      </button>
     </div>
   </header>
   <main>
@@ -10,7 +18,24 @@
 </template>
 
 <script setup lang="ts">
+import { onBeforeMount } from 'vue';
+import { useStore } from 'vuex';
+import { useRouter, useRoute } from 'vue-router';
+import { formDataType } from "@/store/index";
 
+const store = useStore();
+const router = useRouter();
+const route = useRoute();
+
+let availableForms: formDataType[];
+
+const redirectToFormPage = (formName: string) => {
+  router.push("/form/" + formName).then(() => {location.reload()});
+}
+
+onBeforeMount(() => {
+  availableForms = store.state.availableForms;
+});
 </script>
 
 <style lang="scss">
